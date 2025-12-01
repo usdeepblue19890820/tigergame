@@ -201,55 +201,86 @@
             text-align: center;
         }
 
+        /* Cover Screen */
+        #cover-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+        }
+
+        #cover-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Changed to contain to prevent cropping */
+            image-rendering: pixelated;
+            z-index: -1;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <!-- Background Layer -->
-        <!-- 圖片使用 .png -->
-        <img id="scene-bg" src="店門口場景.png" alt="Background" onerror="console.log('無法讀取場景圖，請確認檔名是否為 .png')">
-        
-        <!-- Scanlines Effect -->
-        <div class="scanlines"></div>
-
-        <!-- Item Display Layer (Hidden initially) -->
-        <div id="item-display">
-            <img id="item-img" src="" alt="Item">
+        <!-- Cover Screen -->
+        <div id="cover-screen">
+            <img id="cover-bg" src="封面.png" alt="封面">
+            <button id="start-btn" class="pixel-btn px-12 py-4 text-3xl tracking-widest mt-64">開始遊戲</button>
         </div>
 
-        <!-- Dialogue Layer -->
-        <div class="dialogue-container">
-            <div class="avatar-box pixel-border">
-                <img src="對話框用小虎.png" alt="小虎" class="w-full h-full object-cover">
+        <!-- Game Content (Initially Hidden) -->
+        <div id="game-content" class="hidden">
+            <!-- Background Layer -->
+            <!-- 圖片使用 .png -->
+            <img id="scene-bg" src="店門口場景.png" alt="Background" onerror="console.log('無法讀取場景圖，請確認檔名是否為 .png')">
+            
+            <!-- Scanlines Effect -->
+            <div class="scanlines"></div>
+
+            <!-- Item Display Layer (Hidden initially) -->
+            <div id="item-display">
+                <img id="item-img" src="" alt="Item">
             </div>
-            <div class="text-box pixel-border">
-                <div class="name-tag">小虎</div>
-                <div id="dialogue-text" class="cursor"></div>
-                
-                <!-- Options Buttons -->
-                <div id="options-container" class="options-area hidden">
-                    <button id="btn-yes" class="pixel-btn px-6 py-2 text-xl rounded-none">是</button>
-                    <button id="btn-no" class="pixel-btn pixel-btn-red px-6 py-2 text-xl rounded-none">否</button>
+
+            <!-- Dialogue Layer -->
+            <div class="dialogue-container">
+                <div class="avatar-box pixel-border">
+                    <img src="對話框用小虎.png" alt="小虎" class="w-full h-full object-cover">
+                </div>
+                <div class="text-box pixel-border">
+                    <div class="name-tag">小虎</div>
+                    <div id="dialogue-text" class="cursor"></div>
+                    
+                    <!-- Options Buttons -->
+                    <div id="options-container" class="options-area hidden">
+                        <button id="btn-yes" class="pixel-btn px-6 py-2 text-xl rounded-none">是</button>
+                        <button id="btn-no" class="pixel-btn pixel-btn-red px-6 py-2 text-xl rounded-none">否</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- End Screens -->
-        <div id="game-over-screen" class="overlay-screen">
-            <h1 class="text-4xl text-red-500 mb-4 font-bold tracking-widest">GAME OVER</h1>
-            <p id="game-over-reason" class="text-xl mb-8">小虎找不到零食...</p>
-            <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">重新開始</button>
-        </div>
-
-        <div id="win-screen" class="overlay-screen">
-            <h1 class="text-4xl text-yellow-400 mb-4 font-bold tracking-widest">任務完成!</h1>
-            <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
-                <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
+            <!-- End Screens -->
+            <div id="game-over-screen" class="overlay-screen">
+                <h1 class="text-4xl text-red-500 mb-4 font-bold tracking-widest">GAME OVER</h1>
+                <p id="game-over-reason" class="text-xl mb-8">小虎找不到零食...</p>
+                <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">重新開始</button>
             </div>
-            <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
-            <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
+
+            <div id="win-screen" class="overlay-screen">
+                <h1 class="text-4xl text-yellow-400 mb-4 font-bold tracking-widest">任務完成!</h1>
+                <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
+                    <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
+                </div>
+                <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
+                <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
+            </div>
         </div>
     </div>
 
@@ -296,6 +327,9 @@
         };
 
         // --- DOM Elements ---
+        const coverScreen = document.getElementById('cover-screen');
+        const startBtn = document.getElementById('start-btn');
+        const gameContent = document.getElementById('game-content');
         const bgEl = document.getElementById('scene-bg');
         const textEl = document.getElementById('dialogue-text');
         const optionsEl = document.getElementById('options-container');
@@ -423,8 +457,8 @@
             } else {
                 // User said "This is not it"
                 if (itemData.isCorrect) {
-                     // User skipped the correct item!
-                     triggerGameOver("錯過了小虎最愛的零食...");
+                      // User skipped the correct item!
+                      triggerGameOver("錯過了小虎最愛的零食...");
                 } else {
                     // Correctly skipped wrong item, next
                     gameState.itemIndex++;
@@ -447,7 +481,13 @@
         }
 
         // --- Start ---
-        window.onload = initGame;
+        window.onload = () => {
+            startBtn.addEventListener('click', () => {
+                coverScreen.classList.add('hidden');
+                gameContent.classList.remove('hidden');
+                initGame();
+            });
+        };
 
     </script>
 </body>

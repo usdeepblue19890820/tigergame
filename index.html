@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小虎找零食</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pixel Font (DotGothic16 supports Japanese/Chinese characters effectively for pixel art style) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'DotGothic16', sans-serif;
+            background-color: #202020;
+            overflow: hidden; /* Prevent scrolling */
+            touch-action: none;
+        }
+
+        /* Pixel Art Border Style */
+        .pixel-border {
+            box-shadow: 
+                -4px 0 0 0 black,
+                4px 0 0 0 black,
+                0 -4px 0 0 black,
+                0 4px 0 0 black;
+            margin: 4px;
+        }
+
+        .pixel-box {
+            background-color: white;
+            border: 4px solid black;
+            position: relative;
+        }
+
+        .pixel-btn {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            border: 4px solid #1d4ed8; /* Blue-700 */
+            box-shadow: inset -4px -4px 0px 0px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            text-shadow: 2px 2px 0px black;
+        }
+        
+        .pixel-btn:active {
+            transform: translateY(4px);
+            box-shadow: inset -2px -2px 0px 0px rgba(0,0,0,0.2);
+        }
+
+        .pixel-btn-red {
+            background-color: #ef4444; /* Red-500 */
+            border: 4px solid #b91c1c; /* Red-700 */
+        }
+
+        /* Scanline effect for retro feel */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Typing cursor animation */
+        .cursor::after {
+            content: '▋';
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px; /* Tablet/Desktop constraint */
+            margin: 0 auto;
+            position: relative;
+            background-color: #000;
+            /* 讓內容垂直置中，這樣完整顯示的圖片會在中間 */
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+        }
+
+        #scene-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 改為 contain：保持原圖比例並完整顯示 */
+            image-rendering: pixelated;
+            position: absolute; /* 保持絕對定位 */
+            top: 0;
+            left: 0;
+        }
+
+        #item-display {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px; 
+            max-width: 60%;
+            z-index: 10;
+            display: none;
+        }
+        
+        #item-img {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            border: 4px solid white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.5);
+        }
+
+        /* Dialogue Box */
+        .dialogue-container {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            z-index: 20;
+        }
+
+        .avatar-box {
+            width: 100px;
+            height: 100px;
+            min-width: 100px;
+            background: #fcd34d;
+            border: 4px solid black;
+            margin-right: 10px;
+            position: relative;
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+
+        .avatar-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .text-box {
+            flex-grow: 1;
+            height: 120px;
+            background: white;
+            border: 4px solid black;
+            padding: 15px;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .name-tag {
+            position: absolute;
+            top: -20px;
+            left: 10px;
+            background: #fbbf24;
+            border: 2px solid black;
+            padding: 2px 10px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .options-area {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        /* Game Over / Win Screens */
+        .overlay-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            display: none;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Background Layer -->
+        <!-- 圖片使用 .png -->
+        <img id="scene-bg" src="店門口場景.png" alt="Background" onerror="console.log('無法讀取場景圖，請確認檔名是否為 .png')">
+        
+        <!-- Scanlines Effect -->
+        <div class="scanlines"></div>
+
+        <!-- Item Display Layer (Hidden initially) -->
+        <div id="item-display">
+            <img id="item-img" src="" alt="Item">
+        </div>
+
+        <!-- Dialogue Layer -->
+        <div class="dialogue-container">
+            <div class="avatar-box pixel-border">
+                <img src="對話框用小虎.png" alt="小虎" class="w-full h-full object-cover">
+            </div>
+            <div class="text-box pixel-border">
+                <div class="name-tag">小虎</div>
+                <div id="dialogue-text" class="cursor"></div>
+                
+                <!-- Options Buttons -->
+                <div id="options-container" class="options-area hidden">
+                    <button id="btn-yes" class="pixel-btn px-6 py-2 text-xl rounded-none">是</button>
+                    <button id="btn-no" class="pixel-btn pixel-btn-red px-6 py-2 text-xl rounded-none">否</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screens -->
+        <div id="game-over-screen" class="overlay-screen">
+            <h1 class="text-4xl text-red-500 mb-4 font-bold tracking-widest">GAME OVER</h1>
+            <p id="game-over-reason" class="text-xl mb-8">小虎找不到零食...</p>
+            <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">重新開始</button>
+        </div>
+
+        <div id="win-screen" class="overlay-screen">
+            <h1 class="text-4xl text-yellow-400 mb-4 font-bold tracking-widest">任務完成!</h1>
+            <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
+                <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
+            </div>
+            <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
+            <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Game State & Data ---
+        const gameState = {
+            step: 0,
+            itemIndex: 0
+        };
+
+        // Item Data Sequence
+        // 圖片使用 .png
+        const items = [
+            { name: "汪喵", img: "汪喵.png", isCorrect: false },
+            { name: "怪獸", img: "怪獸.png", isCorrect: false },
+            { name: "沃野蝦仁", img: "沃野蝦仁.png", isCorrect: true },
+            { name: "一口", img: "一口.png", isCorrect: false }
+        ];
+
+        // Scene Logic Definition
+        // 圖片使用 .png
+        const scenes = {
+            0: {
+                bg: "店門口場景.png",
+                text: "請問是這裡嗎?",
+                type: "yes_no_scene",
+                nextYes: 1,
+                nextNo: "game_over_wrong_place"
+            },
+            1: {
+                bg: "店門口場景1.png",
+                text: "確定是這裡嗎?",
+                type: "yes_no_scene",
+                nextYes: 2,
+                nextNo: "game_over_wrong_place"
+            },
+            2: {
+                bg: "店門口場景2.png",
+                text: "還記得我喜歡的零食嗎?",
+                type: "start_items", // Special type to trigger item loop
+                nextYes: "start_item_loop",
+                nextNo: "game_over_forgot" // Usually implied game over
+            }
+        };
+
+        // --- DOM Elements ---
+        const bgEl = document.getElementById('scene-bg');
+        const textEl = document.getElementById('dialogue-text');
+        const optionsEl = document.getElementById('options-container');
+        const btnYes = document.getElementById('btn-yes');
+        const btnNo = document.getElementById('btn-no');
+        const itemDisplayEl = document.getElementById('item-display');
+        const itemImgEl = document.getElementById('item-img');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const winScreen = document.getElementById('win-screen');
+
+        // --- Typing Effect ---
+        let typingTimeout;
+        function typeText(text, callback) {
+            textEl.innerHTML = '';
+            textEl.classList.add('cursor');
+            optionsEl.classList.add('hidden');
+            let i = 0;
+            
+            // Clear previous typing
+            clearTimeout(typingTimeout);
+
+            function type() {
+                if (i < text.length) {
+                    textEl.innerHTML += text.charAt(i);
+                    i++;
+                    typingTimeout = setTimeout(type, 50); // Speed
+                } else {
+                    textEl.classList.remove('cursor');
+                    if (callback) callback();
+                }
+            }
+            type();
+        }
+
+        // --- Game Logic Functions ---
+
+        function initGame() {
+            gameState.step = 0;
+            loadScene(0);
+        }
+
+        function loadScene(stepIndex) {
+            const scene = scenes[stepIndex];
+            
+            // Fade effect for bg
+            bgEl.style.opacity = 0;
+            setTimeout(() => {
+                bgEl.src = scene.bg;
+                bgEl.style.opacity = 1;
+            }, 200);
+
+            // Type text then show options
+            typeText(scene.text, () => {
+                if (scene.type === 'yes_no_scene' || scene.type === 'start_items') {
+                    btnYes.textContent = "是";
+                    btnNo.textContent = "否";
+                    // Define button behavior for this scene
+                    btnYes.onclick = () => handleSceneChoice(true, scene);
+                    btnNo.onclick = () => handleSceneChoice(false, scene);
+                    optionsEl.classList.remove('hidden');
+                }
+            });
+        }
+
+        function handleSceneChoice(isYes, sceneData) {
+            optionsEl.classList.add('hidden');
+            
+            if (isYes) {
+                if (sceneData.nextYes === 'start_item_loop') {
+                    startItemSequence();
+                } else {
+                    loadScene(sceneData.nextYes);
+                }
+            } else {
+                if (typeof sceneData.nextNo === 'string' && sceneData.nextNo.startsWith('game_over')) {
+                    triggerGameOver("小虎很失望地離開了...");
+                }
+            }
+        }
+
+        // --- Item Sequence Logic ---
+        function startItemSequence() {
+            gameState.itemIndex = 0;
+            showItem(0);
+        }
+
+        function showItem(index) {
+            if (index >= items.length) {
+                triggerGameOver("找遍了都沒有喜歡的...");
+                return;
+            }
+
+            const item = items[index];
+            itemImgEl.src = item.img;
+            itemDisplayEl.style.display = 'block';
+
+            // Slight zoom animation
+            itemDisplayEl.style.transform = 'translate(-50%, -50%) scale(0.1)';
+            setTimeout(() => {
+                 itemDisplayEl.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                 itemDisplayEl.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+
+            typeText(`是這個 [${item.name}] 嗎?`, () => {
+                btnYes.textContent = "正確";
+                btnNo.textContent = "不是";
+                
+                btnYes.onclick = () => handleItemChoice(true, item);
+                btnNo.onclick = () => handleItemChoice(false, item);
+                optionsEl.classList.remove('hidden');
+            });
+        }
+
+        function handleItemChoice(isCorrectChoice, itemData) {
+            optionsEl.classList.add('hidden');
+            itemDisplayEl.style.display = 'none'; // Hide item immediately
+
+            if (isCorrectChoice) {
+                // User said "This is correct"
+                if (itemData.isCorrect) {
+                    triggerWin();
+                } else {
+                    triggerGameOver(`這不是小虎喜歡的 ${itemData.name}...`);
+                }
+            } else {
+                // User said "This is not it"
+                if (itemData.isCorrect) {
+                     // User skipped the correct item!
+                     triggerGameOver("錯過了小虎最愛的零食...");
+                } else {
+                    // Correctly skipped wrong item, next
+                    gameState.itemIndex++;
+                    // Small delay before next item
+                    setTimeout(() => {
+                        showItem(gameState.itemIndex);
+                    }, 500);
+                }
+            }
+        }
+
+        // --- End States ---
+        function triggerGameOver(reason) {
+            document.getElementById('game-over-reason').textContent = reason;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function triggerWin() {
+            winScreen.style.display = 'flex';
+        }
+
+        // --- Start ---
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>

@@ -334,16 +334,16 @@
 
         // Item Data Sequences
         const feedItems = [
-            { name: "F32", img: "F32.png", isCorrect: false },
-            { name: "E11", img: "E11.png", isCorrect: false },
-            { name: "自然主義", img: "自然主義.png", isCorrect: true }
+            { name: "飼料1號", img: "F32.png", isCorrect: false },
+            { name: "飼料2號", img: "E11.png", isCorrect: false },
+            { name: "飼料3號", img: "自然主義.png", isCorrect: true }
         ];
 
         const snackItems = [
-            { name: "汪喵", img: "汪喵.png", isCorrect: false },
-            { name: "怪獸", img: "怪獸.png", isCorrect: false },
-            { name: "一口", img: "一口.png", isCorrect: false },
-            { name: "沃野蝦仁", img: "沃野蝦仁.png", isCorrect: true }
+            { name: "零食1號", img: "汪喵.png", isCorrect: false },
+            { name: "零食2號", img: "怪獸.png", isCorrect: false },
+            { name: "零食3號", img: "一口.png", isCorrect: false },
+            { name: "零食4號", img: "沃野蝦仁.png", isCorrect: true }
         ];
 
         // Scene Logic Definition
@@ -409,6 +409,14 @@
                 text: "就是這裡啦",
                 characterImg: "Sakura.png",
                 name: "看起來只有30歲左右的女子",
+                type: "continue",
+                next: 7
+            },
+            7: {
+                bg: "店門口場景2.png",
+                text: "這區應該有我要的",
+                avatar: "對話框用小虎.png",
+                name: "小虎",
                 type: "start_snack_loop"
             }
         };

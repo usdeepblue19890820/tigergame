@@ -368,7 +368,7 @@
             // Feed found
             2: {
                 bg: "新豐.png",
-                text: "有找到就好啦!，接下來去下一間店吧",
+                text: "有找到自然主義就好啦!，接下來去下一間店吧",
                 characterImg: "房.png",
                 name: "男子",
                 type: "continue",
@@ -659,19 +659,17 @@
         }
 
         // --- End States ---
-        function triggerGameOver(reason, imageSrc) {
+        // Modify default imageSrc to always be "小虎.png" unless specified otherwise
+        function triggerGameOver(reason, imageSrc = "小虎.png") {
             document.getElementById('game-over-reason').textContent = reason;
             
-            // Handle Game Over Image if provided
+            // Handle Game Over Image
             const imgContainer = document.getElementById('game-over-img-container');
             const imgEl = document.getElementById('game-over-img');
             
-            if (imageSrc) {
-                imgEl.src = imageSrc;
-                imgContainer.classList.remove('hidden');
-            } else {
-                imgContainer.classList.add('hidden');
-            }
+            // Always show the image container and set source
+            imgEl.src = imageSrc;
+            imgContainer.classList.remove('hidden');
 
             gameOverScreen.style.display = 'flex';
         }

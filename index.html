@@ -109,6 +109,7 @@
             left: 0;
         }
 
+        /* Center Display for Items */
         #item-display {
             position: absolute;
             top: 40%;
@@ -127,6 +128,28 @@
             border: 4px solid white;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             background: rgba(0,0,0,0.5);
+        }
+
+        /* Center Display for Characters */
+        #character-display {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px; 
+            max-width: 60%;
+            z-index: 15; /* Higher than items just in case, though they shouldn't overlap */
+            display: none;
+        }
+
+        #character-img {
+            width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+            /* Character style: no white border, just the image maybe? Or consistent with items? 
+               Let's keep it consistent but maybe without the heavy border if it's a person cut-out.
+               Assuming pngs are transparent cutouts. */
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
         }
 
         /* Dialogue Box */
@@ -153,6 +176,7 @@
             position: relative;
             overflow: hidden;
             image-rendering: pixelated;
+            transition: opacity 0.2s; /* Smooth transition */
         }
 
         .avatar-box img {
@@ -256,9 +280,14 @@
                 <img id="item-img" src="" alt="Item">
             </div>
 
+            <!-- Character Display Layer (For 房 and Sakura) -->
+            <div id="character-display">
+                <img id="character-img" src="" alt="Character">
+            </div>
+
             <!-- Dialogue Layer -->
             <div class="dialogue-container">
-                <div class="avatar-box pixel-border">
+                <div class="avatar-box pixel-border" id="avatar-box">
                     <img id="avatar-img" src="對話框用小虎.png" alt="角色" class="w-full h-full object-cover">
                 </div>
                 <div class="text-box pixel-border">
@@ -289,7 +318,7 @@
                 <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
                     <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
                 </div>
-                <p class="text-2xl mb-8">小虎開心地吃著小虎蝦仁!</p>
+                <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
                 <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
             </div>
         </div>
@@ -314,7 +343,7 @@
             { name: "汪喵", img: "汪喵.png", isCorrect: false },
             { name: "怪獸", img: "怪獸.png", isCorrect: false },
             { name: "一口", img: "一口.png", isCorrect: false },
-            { name: "小虎蝦仁", img: "小虎蝦仁.png", isCorrect: true }
+            { name: "沃野蝦仁", img: "沃野蝦仁.png", isCorrect: true }
         ];
 
         // Scene Logic Definition
@@ -331,16 +360,17 @@
             1: {
                 bg: "新豐.png",
                 text: "你要找甚麼飼料?",
-                avatar: "房.png",
-                name: "房",
+                // Center character display config
+                characterImg: "房.png",
+                name: "男子",
                 type: "start_feed_loop"
             },
             // Feed found
             2: {
                 bg: "新豐.png",
                 text: "有找到就好啦!，接下來去下一間店吧",
-                avatar: "房.png",
-                name: "房",
+                characterImg: "房.png",
+                name: "男子",
                 type: "continue",
                 next: 3
             },
@@ -351,15 +381,17 @@
                 avatar: "對話框用小虎.png",
                 name: "小虎",
                 type: "yes_no_scene",
-                // Logic: Yes -> Game Over (Wrong place?), No -> Correct
-                nextYes: "game_over_wrong_place_1", 
-                nextNo: 4
+                // Logic Update: 
+                // Yes -> Sakura appears (Scene 4)
+                // No -> Direct to Shop (Scene 5) - Assuming correct answer skips the correction
+                nextYes: 4, 
+                nextNo: 5
             },
             4: {
                 bg: "寵公.png",
                 text: "你走錯了啦",
-                avatar: "Sakura.png",
-                name: "Sakura",
+                characterImg: "Sakura.png",
+                name: "看起來只有30歲左右的女子",
                 type: "continue",
                 next: 5
             },
@@ -375,8 +407,8 @@
             6: {
                 bg: "店門口場景1.png",
                 text: "就是這裡啦",
-                avatar: "Sakura.png",
-                name: "Sakura",
+                characterImg: "Sakura.png",
+                name: "看起來只有30歲左右的女子",
                 type: "start_snack_loop"
             }
         };
@@ -388,12 +420,18 @@
         const bgEl = document.getElementById('scene-bg');
         const textEl = document.getElementById('dialogue-text');
         const nameTagEl = document.getElementById('name-tag');
+        const avatarBoxEl = document.getElementById('avatar-box');
         const avatarImgEl = document.getElementById('avatar-img');
         const optionsEl = document.getElementById('options-container');
         const btnYes = document.getElementById('btn-yes');
         const btnNo = document.getElementById('btn-no');
+        
         const itemDisplayEl = document.getElementById('item-display');
         const itemImgEl = document.getElementById('item-img');
+        
+        const characterDisplayEl = document.getElementById('character-display');
+        const characterImgEl = document.getElementById('character-img');
+        
         const gameOverScreen = document.getElementById('game-over-screen');
         const winScreen = document.getElementById('win-screen');
 
@@ -431,9 +469,28 @@
         function loadScene(stepIndex) {
             const scene = scenes[stepIndex];
             
-            // Update Avatar & Name
-            if (scene.avatar) avatarImgEl.src = scene.avatar;
+            // Handle Name Tag
             if (scene.name) nameTagEl.innerText = scene.name;
+
+            // Handle Avatar vs Center Character
+            if (scene.characterImg) {
+                // Show Character in Center, Hide Avatar Box
+                characterImgEl.src = scene.characterImg;
+                characterDisplayEl.style.display = 'block';
+                avatarBoxEl.classList.add('hidden');
+
+                // Animation for character appearance
+                characterDisplayEl.style.transform = 'translate(-50%, -50%) scale(0.1)';
+                setTimeout(() => {
+                     characterDisplayEl.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                     characterDisplayEl.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, 10);
+            } else {
+                // Show standard Avatar Box, Hide Center Character
+                characterDisplayEl.style.display = 'none';
+                avatarBoxEl.classList.remove('hidden');
+                if (scene.avatar) avatarImgEl.src = scene.avatar;
+            }
 
             // Fade effect for bg
             bgEl.style.opacity = 0;
@@ -503,6 +560,15 @@
 
         // --- Item Sequence Logic ---
         function startItemSequence(type) {
+            // Hide character when items start showing
+            characterDisplayEl.style.display = 'none';
+            // Also ensure avatar box is hidden or shown appropriately? 
+            // Usually items are shown alone or with dialogue. 
+            // Let's bring back the avatar box for item questions if we want '小虎' asking.
+            avatarBoxEl.classList.remove('hidden');
+            avatarImgEl.src = "對話框用小虎.png";
+            nameTagEl.innerText = "小虎";
+
             gameState.itemIndex = 0;
             gameState.currentItemSet = type; // 'feed' or 'snack'
             showItem(0);

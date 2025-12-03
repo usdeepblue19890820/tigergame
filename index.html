@@ -259,10 +259,10 @@
             <!-- Dialogue Layer -->
             <div class="dialogue-container">
                 <div class="avatar-box pixel-border">
-                    <img src="對話框用小虎.png" alt="小虎" class="w-full h-full object-cover">
+                    <img id="avatar-img" src="對話框用小虎.png" alt="角色" class="w-full h-full object-cover">
                 </div>
                 <div class="text-box pixel-border">
-                    <div class="name-tag">小虎</div>
+                    <div class="name-tag" id="name-tag">小虎</div>
                     <div id="dialogue-text" class="cursor"></div>
                     
                     <!-- Options Buttons -->
@@ -276,7 +276,11 @@
             <!-- End Screens -->
             <div id="game-over-screen" class="overlay-screen">
                 <h1 class="text-4xl text-red-500 mb-4 font-bold tracking-widest">GAME OVER</h1>
-                <p id="game-over-reason" class="text-xl mb-8">小虎找不到零食...</p>
+                <!-- Optional: Image for Game Over if needed -->
+                <!-- <div class="w-48 h-48 mb-6 border-4 border-white bg-white hidden" id="game-over-img-container">
+                    <img src="小虎.png" class="w-full h-full object-cover pixelated">
+                </div> -->
+                <p id="game-over-reason" class="text-xl mb-8">...</p>
                 <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">重新開始</button>
             </div>
 
@@ -285,7 +289,7 @@
                 <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
                     <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
                 </div>
-                <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
+                <p class="text-2xl mb-8">小虎開心地吃著小虎蝦仁!</p>
                 <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
             </div>
         </div>
@@ -295,41 +299,85 @@
         // --- Game State & Data ---
         const gameState = {
             step: 0,
-            itemIndex: 0
+            itemIndex: 0,
+            currentItemSet: null, // 'feed' or 'snack'
         };
 
-        // Item Data Sequence
-        // 圖片使用 .png
-        const items = [
+        // Item Data Sequences
+        const feedItems = [
+            { name: "F32", img: "F32.png", isCorrect: false },
+            { name: "E11", img: "E11.png", isCorrect: false },
+            { name: "自然主義", img: "自然主義.png", isCorrect: true }
+        ];
+
+        const snackItems = [
             { name: "汪喵", img: "汪喵.png", isCorrect: false },
             { name: "怪獸", img: "怪獸.png", isCorrect: false },
             { name: "一口", img: "一口.png", isCorrect: false },
-            { name: "沃野蝦仁", img: "沃野蝦仁.png", isCorrect: true }
+            { name: "小虎蝦仁", img: "小虎蝦仁.png", isCorrect: true }
         ];
 
         // Scene Logic Definition
-        // 圖片使用 .png
         const scenes = {
+            // Stage 1: Feed Hunting
             0: {
-                bg: "店門口場景.png",
-                text: "請問是這裡嗎?",
-                type: "yes_no_scene",
-                nextYes: 1,
-                nextNo: "game_over_wrong_place"
+                bg: "新豐.png",
+                text: "第一次來這邊不知道有沒有我要的飼料",
+                avatar: "對話框用小虎.png",
+                name: "小虎",
+                type: "continue",
+                next: 1
             },
             1: {
-                bg: "店門口場景1.png",
-                text: "確定要進入嗎?",
-                type: "yes_no_scene",
-                nextYes: 2,
-                nextNo: "game_over_wrong_place"
+                bg: "新豐.png",
+                text: "你要找甚麼飼料?",
+                avatar: "房.png",
+                name: "房",
+                type: "start_feed_loop"
             },
+            // Feed found
             2: {
-                bg: "店門口場景2.png",
-                text: "還記得我喜歡的零食嗎?",
-                type: "start_items", // Special type to trigger item loop
-                nextYes: "start_item_loop",
-                nextNo: "game_over_forgot" // Usually implied game over
+                bg: "新豐.png",
+                text: "有找到就好啦!，接下來去下一間店吧",
+                avatar: "房.png",
+                name: "房",
+                type: "continue",
+                next: 3
+            },
+            // Stage 2: Pet Park / Co?
+            3: {
+                bg: "寵公.png",
+                text: "這裡會有我要的嗎",
+                avatar: "對話框用小虎.png",
+                name: "小虎",
+                type: "yes_no_scene",
+                // Logic: Yes -> Game Over (Wrong place?), No -> Correct
+                nextYes: "game_over_wrong_place_1", 
+                nextNo: 4
+            },
+            4: {
+                bg: "寵公.png",
+                text: "你走錯了啦",
+                avatar: "Sakura.png",
+                name: "Sakura",
+                type: "continue",
+                next: 5
+            },
+            // Stage 3: Correct Store
+            5: {
+                bg: "店門口場景.png",
+                text: "這裡應該有我要的零食",
+                avatar: "對話框用小虎.png",
+                name: "小虎",
+                type: "continue",
+                next: 6
+            },
+            6: {
+                bg: "店門口場景1.png",
+                text: "就是這裡啦",
+                avatar: "Sakura.png",
+                name: "Sakura",
+                type: "start_snack_loop"
             }
         };
 
@@ -339,6 +387,8 @@
         const gameContent = document.getElementById('game-content');
         const bgEl = document.getElementById('scene-bg');
         const textEl = document.getElementById('dialogue-text');
+        const nameTagEl = document.getElementById('name-tag');
+        const avatarImgEl = document.getElementById('avatar-img');
         const optionsEl = document.getElementById('options-container');
         const btnYes = document.getElementById('btn-yes');
         const btnNo = document.getElementById('btn-no');
@@ -381,6 +431,10 @@
         function loadScene(stepIndex) {
             const scene = scenes[stepIndex];
             
+            // Update Avatar & Name
+            if (scene.avatar) avatarImgEl.src = scene.avatar;
+            if (scene.name) nameTagEl.innerText = scene.name;
+
             // Fade effect for bg
             bgEl.style.opacity = 0;
             setTimeout(() => {
@@ -390,12 +444,39 @@
 
             // Type text then show options
             typeText(scene.text, () => {
-                if (scene.type === 'yes_no_scene' || scene.type === 'start_items') {
+                // Determine button layout
+                if (scene.type === 'continue') {
+                    btnYes.textContent = "繼續";
+                    btnYes.classList.remove('hidden');
+                    btnNo.classList.add('hidden'); // Hide No button
+                    
+                    btnYes.onclick = () => loadScene(scene.next);
+                    optionsEl.classList.remove('hidden');
+                } 
+                else if (scene.type === 'yes_no_scene') {
                     btnYes.textContent = "是";
                     btnNo.textContent = "否";
-                    // Define button behavior for this scene
+                    btnYes.classList.remove('hidden');
+                    btnNo.classList.remove('hidden');
+
                     btnYes.onclick = () => handleSceneChoice(true, scene);
                     btnNo.onclick = () => handleSceneChoice(false, scene);
+                    optionsEl.classList.remove('hidden');
+                }
+                else if (scene.type === 'start_feed_loop') {
+                    btnYes.textContent = "開始找";
+                    btnYes.classList.remove('hidden');
+                    btnNo.classList.add('hidden');
+                    
+                    btnYes.onclick = () => startItemSequence('feed');
+                    optionsEl.classList.remove('hidden');
+                }
+                else if (scene.type === 'start_snack_loop') {
+                    btnYes.textContent = "找零食";
+                    btnYes.classList.remove('hidden');
+                    btnNo.classList.add('hidden');
+                    
+                    btnYes.onclick = () => startItemSequence('snack');
                     optionsEl.classList.remove('hidden');
                 }
             });
@@ -405,27 +486,34 @@
             optionsEl.classList.add('hidden');
             
             if (isYes) {
-                if (sceneData.nextYes === 'start_item_loop') {
-                    startItemSequence();
+                if (typeof sceneData.nextYes === 'string' && sceneData.nextYes.startsWith('game_over')) {
+                    // Logic for Pet Park "Yes" -> Game Over
+                    triggerGameOver("這邊不是賣零食的啦...");
                 } else {
                     loadScene(sceneData.nextYes);
                 }
             } else {
-                if (typeof sceneData.nextNo === 'string' && sceneData.nextNo.startsWith('game_over')) {
+                if (typeof sceneData.nextNo === 'number') {
+                    loadScene(sceneData.nextNo);
+                } else if (typeof sceneData.nextNo === 'string' && sceneData.nextNo.startsWith('game_over')) {
                     triggerGameOver("小虎很失望地離開了...");
                 }
             }
         }
 
         // --- Item Sequence Logic ---
-        function startItemSequence() {
+        function startItemSequence(type) {
             gameState.itemIndex = 0;
+            gameState.currentItemSet = type; // 'feed' or 'snack'
             showItem(0);
         }
 
         function showItem(index) {
+            const items = gameState.currentItemSet === 'feed' ? feedItems : snackItems;
+
             if (index >= items.length) {
-                triggerGameOver("找遍了都沒有喜歡的...");
+                // If we ran out of items without finding/selecting the correct one
+                triggerGameOver("找不到想要的東西...");
                 return;
             }
 
@@ -433,16 +521,21 @@
             itemImgEl.src = item.img;
             itemDisplayEl.style.display = 'block';
 
-            // Slight zoom animation
+            // Reset Item Animation
             itemDisplayEl.style.transform = 'translate(-50%, -50%) scale(0.1)';
             setTimeout(() => {
                  itemDisplayEl.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                  itemDisplayEl.style.transform = 'translate(-50%, -50%) scale(1)';
             }, 10);
 
-            typeText(`是這個 [${item.name}] 嗎?`, () => {
-                btnYes.textContent = "正確";
+            // Change question based on item set
+            const questionText = gameState.currentItemSet === 'feed' ? `是這個 [${item.name}] 嗎?` : `是這個 [${item.name}] 嗎?`;
+
+            typeText(questionText, () => {
+                btnYes.textContent = "是";
                 btnNo.textContent = "不是";
+                btnYes.classList.remove('hidden');
+                btnNo.classList.remove('hidden');
                 
                 btnYes.onclick = () => handleItemChoice(true, item);
                 btnNo.onclick = () => handleItemChoice(false, item);
@@ -455,21 +548,27 @@
             itemDisplayEl.style.display = 'none'; // Hide item immediately
 
             if (isCorrectChoice) {
-                // User said "This is correct"
+                // User said "Yes, this is it"
                 if (itemData.isCorrect) {
-                    triggerWin();
+                    if (gameState.currentItemSet === 'feed') {
+                        // Success Feed -> Go to next scene (Scene 2)
+                        loadScene(2);
+                    } else {
+                        // Success Snack -> Win Game
+                        triggerWin();
+                    }
                 } else {
-                    triggerGameOver(`這不是小虎喜歡的 ${itemData.name}...`);
+                    // Wrong choice -> Game Over
+                    triggerGameOver(`選錯了，這不是小虎要的 ${itemData.name}...`);
                 }
             } else {
-                // User said "This is not it"
+                // User said "No, this is not it"
                 if (itemData.isCorrect) {
-                      // User skipped the correct item!
-                      triggerGameOver("錯過了小虎最愛的零食...");
+                      // Skipped the correct item -> Game Over
+                      triggerGameOver(`錯過了小虎最想要的 ${itemData.name}...`);
                 } else {
                     // Correctly skipped wrong item, next
                     gameState.itemIndex++;
-                    // Small delay before next item
                     setTimeout(() => {
                         showItem(gameState.itemIndex);
                     }, 500);

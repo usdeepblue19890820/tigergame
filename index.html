@@ -305,10 +305,10 @@
             <!-- End Screens -->
             <div id="game-over-screen" class="overlay-screen">
                 <h1 class="text-4xl text-red-500 mb-4 font-bold tracking-widest">GAME OVER</h1>
-                <!-- Optional: Image for Game Over if needed -->
-                <!-- <div class="w-48 h-48 mb-6 border-4 border-white bg-white hidden" id="game-over-img-container">
-                    <img src="小虎.png" class="w-full h-full object-cover pixelated">
-                </div> -->
+                <!-- Dynamic Image for Game Over -->
+                <div class="w-48 h-48 mb-6 border-4 border-white bg-white hidden" id="game-over-img-container">
+                    <img id="game-over-img" src="" class="w-full h-full object-cover pixelated">
+                </div>
                 <p id="game-over-reason" class="text-xl mb-8">...</p>
                 <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">重新開始</button>
             </div>
@@ -316,9 +316,9 @@
             <div id="win-screen" class="overlay-screen">
                 <h1 class="text-4xl text-yellow-400 mb-4 font-bold tracking-widest">任務完成!</h1>
                 <div class="w-48 h-48 mb-6 border-4 border-white bg-white">
-                    <img src="小虎.png" class="w-full h-full object-cover pixelated" alt="Winner">
+                    <img id="win-img" src="小虎蝦仁.png" class="w-full h-full object-cover pixelated" alt="Winner">
                 </div>
-                <p class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
+                <p id="win-text" class="text-2xl mb-8">小虎開心地吃著沃野蝦仁!</p>
                 <button onclick="location.reload()" class="pixel-btn px-8 py-3 text-2xl">再玩一次</button>
             </div>
         </div>
@@ -579,7 +579,7 @@
 
             if (index >= items.length) {
                 // If we ran out of items without finding/selecting the correct one
-                triggerGameOver("找不到想要的東西...");
+                triggerGameOver("找不到想要的東西...", "小虎.png");
                 return;
             }
 
@@ -621,17 +621,25 @@
                         loadScene(2);
                     } else {
                         // Success Snack -> Win Game
-                        triggerWin();
+                        triggerWin("小虎蝦仁.png", "小虎開心地吃著沃野蝦仁!");
                     }
                 } else {
                     // Wrong choice -> Game Over
-                    triggerGameOver(`選錯了，這不是小虎要的 ${itemData.name}...`);
+                    if (gameState.currentItemSet === 'snack') {
+                        triggerGameOver(`選錯了，這不是小虎要的 ${itemData.name}...`, "小虎.png");
+                    } else {
+                        triggerGameOver(`選錯了，這不是小虎要的 ${itemData.name}...`);
+                    }
                 }
             } else {
                 // User said "No, this is not it"
                 if (itemData.isCorrect) {
                       // Skipped the correct item -> Game Over
-                      triggerGameOver(`錯過了小虎最想要的 ${itemData.name}...`);
+                      if (gameState.currentItemSet === 'snack') {
+                        triggerGameOver(`錯過了小虎最想要的 ${itemData.name}...`, "小虎.png");
+                      } else {
+                        triggerGameOver(`錯過了小虎最想要的 ${itemData.name}...`);
+                      }
                 } else {
                     // Correctly skipped wrong item, next
                     gameState.itemIndex++;
@@ -643,12 +651,30 @@
         }
 
         // --- End States ---
-        function triggerGameOver(reason) {
+        function triggerGameOver(reason, imageSrc) {
             document.getElementById('game-over-reason').textContent = reason;
+            
+            // Handle Game Over Image if provided
+            const imgContainer = document.getElementById('game-over-img-container');
+            const imgEl = document.getElementById('game-over-img');
+            
+            if (imageSrc) {
+                imgEl.src = imageSrc;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
             gameOverScreen.style.display = 'flex';
         }
 
-        function triggerWin() {
+        function triggerWin(imageSrc, text) {
+            if (imageSrc) {
+                document.getElementById('win-img').src = imageSrc;
+            }
+            if (text) {
+                document.getElementById('win-text').textContent = text;
+            }
             winScreen.style.display = 'flex';
         }
 
